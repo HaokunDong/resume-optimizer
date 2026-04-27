@@ -12,35 +12,41 @@ export async function GET() {
 }
 
 export async function POST() {
-  // 直接测试 CodeBuddy API，不走工具层
   const apiKey = process.env.CODEBUDDY_API_KEY || "";
-  const baseUrl = "https://copilot.tencent.com/chat/completions";
+  const results: Record<string, any> = {};
 
-  try {
-    const response = await fetch(baseUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: "auto",
-        messages: [{ role: "user", content: "hi" }],
-        max_tokens: 10,
-      }),
-    });
+  // Test multiple possible endpoints
+  const endpoints = [
+    "https://copilot.tencent.com/chat/completions",
+    "https://api.hunyuan.cloud.tencent.com/v1/chat/completions",
+    "https://hunyuan.cloud.tencent.com/v1/chat/completions",
+  ];
 
-    const text = await response.text();
-    return NextResponse.json({
-      apiStatus: response.status,
-      apiStatusText: response.statusText,
-      apiHeaders: Object.fromEntries(response.headers.entries()),
-      apiBody: text.slice(0, 500),
-    });
-  } catch (error: any) {
-    return NextResponse.json({
-      success: false,
-      error: error.message,
-    });
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "auto",
+          messages: [{ role: "user", content: "hi" }],
+          max_tokens: 10,
+        }),
+      });
+
+      const text = await response.text();
+      results[url] = {
+        status: response.status,
+        contentType: response.headers.get("content-type"),
+        bodyPreview: text.slice(0, 200),
+      };
+    } catch (error: any) {
+      results[url] = { error: error.message };
+    }
   }
+
+  return NextResponse.json(results);
 }
