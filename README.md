@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 简历智改 (Resume Optimizer)
 
-## Getting Started
+AI 驱动的简历优化工具，根据目标岗位 JD 自动改写和优化简历。
 
-First, run the development server:
+## 功能特性
+
+- 📄 支持 PDF/TXT 格式简历上传
+- 📝 岗位 JD 粘贴输入
+- 🤖 AI 智能分析关键词匹配度
+- ✨ 自动生成优化建议
+- 📥 一键下载优化后简历
+
+## 技术栈
+
+- **框架**: Next.js 14 (App Router)
+- **语言**: TypeScript
+- **样式**: Tailwind CSS + shadcn/ui
+- **AI**: OpenAI GPT-4o-mini
+- **部署**: Vercel
+
+## 快速开始
+
+### 1. 安装依赖
+
+```bash
+npm install
+```
+
+### 2. 配置环境变量
+
+```bash
+cp .env.example .env.local
+```
+
+然后编辑 `.env.local`，添加你的 OpenAI API Key：
+
+```
+OPENAI_API_KEY=sk-your-api-key
+```
+
+### 3. 启动开发服务器
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+打开 [http://localhost:3000](http://localhost:3000) 查看效果。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. 构建生产版本
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## 项目结构
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/
+│   ├── api/rewrite/     # AI 改写 API
+│   └── page.tsx         # 主页
+├── components/
+│   ├── ui/              # shadcn/ui 组件
+│   └── file-upload.tsx  # 文件上传组件
+└── lib/
+    └── utils.ts         # 工具函数
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## CI/CD
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+本项目使用 Harness 进行持续集成和部署。详见 [Harness 文档](./docs/harness.md)。
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
