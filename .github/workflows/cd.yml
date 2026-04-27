@@ -55,7 +55,9 @@ jobs:
       - name: Deploy to Vercel
         id: deploy
         run: |
-          url=$(vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          url=$(vercel deploy --prebuilt --prod \
+            --env CODEBUDDY_API_KEY=${{ secrets.CODEBUDDY_API_KEY }} \
+            --token=${{ secrets.VERCEL_TOKEN }})
           echo "deploy_url=$url" >> $GITHUB_OUTPUT
 
       - name: Comment deployment URL
