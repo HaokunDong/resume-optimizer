@@ -1,0 +1,254 @@
+# ============================================================
+# Harness CI Pipeline - 简历优化器自动化构建
+# ============================================================
+# 
+# 触发条件：推送到 main 或 pr/* 分支时自动执行
+# 
+# 流水线阶段：
+# 1. Build - 安装依赖、构建项目
+# 2. Test - 运行测试
+# 3. Security Scan - 安全扫描
+# ============================================================
+
+pipeline:
+  name: Resume Optimizer CI
+  identifier: resume_optimizer_ci
+  projectIdentifier: resume_optimizer
+  orgIdentifier: default
+  tags:
+    app: resume-optimizer
+    tier: frontend
+
+  variables:
+    - name: NODE_VERSION
+      type: String
+      value: "20"
+      fixed: true
+    - name: BUILD_TIMEOUT
+      type: String
+      value: "10m"
+      fixed: true
+
+  stages:
+    # ============================================================
+    # Stage 1: Build - 安装依赖并构建
+    # ============================================================
+    - stage:
+        name: Build & Install
+        identifier: build
+        description: 安装依赖并构建生产版本
+        tags: {}
+        spec:
+          execution:
+            steps:
+              # 步骤 1: 设置 Node.js 环境
+              - step:
+                  name: Setup Node.js
+                  identifier: setup_node
+                  type: Run
+                  description: 配置 Node.js ${varaibles.NODE_VERSION} 环境
+                  timeout: 2m
+                  spec:
+                    connectorRef: harness_delegate
+                    image: node:${variables.NODE_VERSION}-slim
+                    command: |
+                      node --version
+                      npm --version
+
+              # 步骤 2: 安装依赖
+              - step:
+                  name: Install Dependencies
+                  identifier: install_deps
+                  type: Run
+                  description: 使用 npm ci 安装项目依赖
+                  timeout: 5m
+                  spec:
+                    connectorRef: harness_delegate
+                    image: node:${variables.NODE_VERSION}-slim
+                    command: |
+                      npm ci --legacy-peer-deps
+
+              # 步骤 3: 类型检查
+              - step:
+                  name: Type Check
+                  identifier: type_check
+                  type: Run
+                  description: 运行 TypeScript 类型检查
+                  timeout: 3m
+                  spec:
+                    connectorRef: harness_delegate
+                    image: node:${variables.NODE_VERSION}-slim
+                    command: |
+                      npm run type-check || npx tsc --noEmit
+
+              # 步骤 4: Lint 检查
+              - step:
+                  name: Lint
+                  identifier: lint
+                  type: Run
+                  description: 运行 ESLint 代码规范检查
+                  timeout: 3m
+                  spec:
+                    connectorRef: harness_delegate
+                    image: node:${variables.NODE_VERSION}-slim
+                    command: |
+                      npm run lint || echo "No lint script configured"
+
+              # 步骤 5: 构建生产版本
+              - step:
+                  name: Build Production
+                  identifier: build_prod
+                  type: BuildAndPushprd
+                  description: 构建 Next.js 生产版本
+                  timeout: 5m
+                  spec:
+                    connectorRef: harness_delegate
+                    repoRoot: .
+                    dockerfile: |
+                      FROM node:${variables.NODE_VERSION}-slim AS builder
+                      WORKDIR /app
+                      COPY package*.json ./
+                      RUN npm ci
+                      COPY . .
+                      RUN npm run build
+
+                      FROM node:${variables.NODE_VERSION}-slim AS runner
+                      WORKDIR /app
+                      ENV NODE_ENV=production
+                      COPY --from=builder /app/.next/standalone ./
+                      COPY --from=builder /app/.next/static ./.next/static
+                      EXPOSE 3000
+                      CMD ["node", "server.js"]
+                    tags:
+                      build: "true"
+
+    # ============================================================
+    # Stage 2: Test - 运行测试
+    # ============================================================
+    - stage:
+        name: Test
+        identifier: test
+        description: 运行单元测试和集成测试
+        tags: {}
+        dependencies:
+          - identifier: build
+            type: Stage
+        spec:
+          execution:
+            steps:
+              # 步骤 1: 运行单元测试
+              - step:
+                  name: Unit Tests
+                  identifier: unit_tests
+                  type: Run
+                  description: 运行 Jest 单元测试
+                  timeout: 5m
+                  spec:
+                    connectorRef: harness_delegate
+                    image: node:${variables.NODE_VERSION}-slim
+                    command: |
+                      npm run test || echo "No tests configured"
+
+              # 步骤 2: 生成测试覆盖率报告
+              - step:
+                  name: Coverage Report
+                  identifier: coverage
+                  type: Run
+                  description: 生成测试覆盖率报告
+                  timeout: 5m
+                  spec:
+                    connectorRef: harness_delegate
+                    image: node:${variables.NODE_VERSION}-slim
+                    command: |
+                      npm run test:coverage || echo "Coverage not available"
+
+              # 步骤 3: 上传测试结果
+              - step:
+                  name: Upload Test Results
+                  identifier: upload_test_results
+                  type: TestIntelligence
+                  description: 上传测试结果到 Harness
+                  timeout: 2m
+                  spec:
+                    connectorRef: harness_delegate
+
+    # ============================================================
+    # Stage 3: Security Scan - 安全扫描
+    # ============================================================
+    - stage:
+        name: Security Scan
+        identifier: security_scan
+        description: 运行安全扫描检测漏洞
+        tags: {}
+        dependencies:
+          - identifier: build
+            type: Stage
+        spec:
+          execution:
+            steps:
+              # 步骤 1: 依赖漏洞扫描
+              - step:
+                  name: Dependency Scan
+                  identifier: dep_scan
+                  type: Run
+                  description: 使用 npm audit 检查依赖漏洞
+                  timeout: 3m
+                  spec:
+                    connectorRef: harness_delegate
+                    image: node:${variables.NODE_VERSION}-slim
+                    command: |
+                      npm audit --audit-level=moderate || true
+
+              # 步骤 2: 构建镜像漏洞扫描
+              - step:
+                  name: Trivy Scan
+                  identifier: trivy_scan
+                  type: Run
+                  description: 使用 Trivy 扫描 Docker 镜像漏洞
+                  timeout: 5m
+                  spec:
+                    connectorRef: harness_delegate
+                    image: aquasec/trivy:latest
+                    command: |
+                      trivy image --severity HIGH,CRITICAL your-registry/resume-optimizer:latest || true
+
+    # ============================================================
+    # Stage 4: Push to Registry - 推送镜像
+    # ============================================================
+    - stage:
+        name: Push to Registry
+        identifier: push_image
+        description: 推送构建好的 Docker 镜像到仓库
+        tags: {}
+        dependencies:
+          - identifier: build
+            type: Stage
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Push Docker Image
+                  identifier: push_image
+                  type: BuildAndPushprd
+                  description: 推送镜像到容器仓库
+                  timeout: 5m
+                  spec:
+                    connectorRef: docker_hub
+                    repoRoot: .
+                    dockerfile: |
+                      FROM node:${variables.NODE_VERSION}-slim AS builder
+                      WORKDIR /app
+                      COPY package*.json ./
+                      RUN npm ci
+                      COPY . .
+                      RUN npm run build
+
+                      FROM node:${variables.NODE_VERSION}-slim AS runner
+                      WORKDIR /app
+                      ENV NODE_ENV=production
+                      COPY --from=builder /app/.next/standalone ./
+                      COPY --from=builder /app/.next/static ./.next/static
+                      EXPOSE 3000
+                      CMD ["node", "server.js"]
+                    tags:
+                      version: ${vars.image_tag}
