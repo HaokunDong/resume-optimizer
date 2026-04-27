@@ -5,6 +5,6 @@
   "installCommand": "npm install",
   "regions": ["iad1"],
   "env": {
-    "CODEBUDDY_API_KEY": "@codebuddy-api-key"
+    "CODEBUDDY_API_KEY": "@CODEBUDDY_API_KEY"
   }
 }
