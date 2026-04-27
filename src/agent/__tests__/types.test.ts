@@ -1,102 +1,102 @@
 import { describe, it, expect } from "vitest";
-import type {
-  ExecutionState,
-  KeywordsAnalysis,
-  ResumeResult,
-  AgentConfig,
-  ToolDefinition,
-} from "../types";
+import { validateInput, validateResult } from "../types";
 
-describe("L1 - Type System", () => {
-  describe("KeywordsAnalysis", () => {
-    it("应该接受 matched 和 missing 字段", () => {
-      const analysis: KeywordsAnalysis = {
-        matched: ["React", "TypeScript"],
-        missing: ["GraphQL"],
-      };
-
-      expect(analysis.matched).toHaveLength(2);
-      expect(analysis.missing).toHaveLength(1);
+describe("L1 - Input Validation", () => {
+  describe("validateInput", () => {
+    it("应该通过有效输入", () => {
+      const result = validateInput({ jd: "React 工程师", resume: "3年经验" });
+      expect(result.valid).toBe(true);
     });
 
-    it("应该允许空数组", () => {
-      const analysis: KeywordsAnalysis = {
-        matched: [],
-        missing: [],
-      };
+    it("应该拒绝空 JD", () => {
+      const result = validateInput({ jd: "", resume: "有内容" });
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("JD");
+    });
 
-      expect(analysis.matched).toEqual([]);
-      expect(analysis.missing).toEqual([]);
+    it("应该拒绝空简历", () => {
+      const result = validateInput({ jd: "React 工程师", resume: "  " });
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("简历");
+    });
+
+    it("应该拒绝非对象输入", () => {
+      expect(validateInput(null).valid).toBe(false);
+      expect(validateInput("string").valid).toBe(false);
+      expect(validateInput(undefined).valid).toBe(false);
+    });
+
+    it("应该拒绝超长输入", () => {
+      const long = "a".repeat(50001);
+      const result = validateInput({ jd: long, resume: "简历" });
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain("过长");
+    });
+
+    it("应该接受最大长度边界值", () => {
+      const max = "a".repeat(50000);
+      const result = validateInput({ jd: max, resume: max });
+      expect(result.valid).toBe(true);
     });
   });
 
-  describe("ResumeResult", () => {
-    it("应该包含所有必需字段", () => {
-      const result: ResumeResult = {
-        optimized: "优化后的简历内容",
+  describe("validateResult", () => {
+    it("应该通过有效结果", () => {
+      const result = validateResult({
+        keywords_analysis: { matched: ["React"], missing: ["GraphQL"] },
+        optimized_resume: "优化后的简历",
         suggestions: ["建议1", "建议2"],
-        keywords: {
-          matched: ["React"],
-          missing: ["GraphQL"],
-        },
-      };
-
-      expect(result.optimized).toBeTruthy();
-      expect(result.suggestions).toHaveLength(2);
-      expect(result.keywords.matched).toContain("React");
+      });
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
     });
-  });
 
-  describe("ExecutionState", () => {
-    it("应该包含所有状态字段", () => {
-      const state: ExecutionState = {
-        currentStep: "optimize",
-        jd: "测试 JD",
-        resume: "测试简历",
-        keywords: { matched: [], missing: [] },
-        result: null,
-        error: null,
-        sessionId: "test-session",
-        metadata: {
-          tokenUsage: 0,
-          retryCount: 0,
-        },
-      };
-
-      expect(state.currentStep).toBe("optimize");
-      expect(state.sessionId).toBe("test-session");
-      expect(state.metadata.retryCount).toBe(0);
+    it("应该拒绝缺少 keywords_analysis", () => {
+      const result = validateResult({
+        optimized_resume: "简历",
+        suggestions: ["建议"],
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("缺少 keywords_analysis 字段");
     });
-  });
 
-  describe("AgentConfig", () => {
-    it("应该提供合理的默认值", () => {
-      const config: AgentConfig = {
-        maxRetries: 5,
-        retryDelay: 2000,
-      };
-
-      expect(config.maxRetries).toBe(5);
-      expect(config.retryDelay).toBe(2000);
+    it("应该拒绝非字符串 optimized_resume", () => {
+      const result = validateResult({
+        keywords_analysis: { matched: [], missing: [] },
+        optimized_resume: 123,
+        suggestions: [],
+      } as any);
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("optimized_resume 必须是字符串");
     });
-  });
 
-  describe("ToolDefinition", () => {
-    it("应该定义工具的输入schema", () => {
-      const tool: ToolDefinition = {
-        name: "test_tool",
-        description: "测试工具",
-        inputSchema: {
-          type: "object",
-          properties: {
-            input: { type: "string" },
-          },
-          required: ["input"],
-        },
-      };
+    it("应该拒绝非数组 suggestions", () => {
+      const result = validateResult({
+        keywords_analysis: { matched: [], missing: [] },
+        optimized_resume: "简历",
+        suggestions: "not array",
+      } as any);
+      expect(result.valid).toBe(false);
+      expect(result.errors).toContain("suggestions 必须是数组");
+    });
 
-      expect(tool.name).toBe("test_tool");
-      expect(tool.inputSchema).toHaveProperty("properties");
+    it("应该拒绝 suggestions 数量超出范围", () => {
+      const result = validateResult({
+        keywords_analysis: { matched: [], missing: [] },
+        optimized_resume: "简历",
+        suggestions: Array(11).fill("建议"),
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some((e: string) => e.includes("1-10"))).toBe(true);
+    });
+
+    it("应该拒绝空 keywords matched/missing", () => {
+      const result = validateResult({
+        keywords_analysis: { matched: "not array", missing: [] },
+        optimized_resume: "简历",
+        suggestions: [],
+      } as any);
+      expect(result.valid).toBe(false);
     });
   });
 });
