@@ -5,6 +5,6 @@
   "installCommand": "npm install",
   "regions": ["iad1"],
   "env": {
-    "OPENAI_API_KEY": "@openai-api-key"
+    "OPENAI_API_KEY": "sk-placeholder-for-ci"
   }
 }
