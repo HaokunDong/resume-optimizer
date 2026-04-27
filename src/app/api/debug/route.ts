@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { ToolExecutor } from "@/agent/tools";
 
 export async function GET() {
   return NextResponse.json({
@@ -13,16 +12,35 @@ export async function GET() {
 }
 
 export async function POST() {
-  const executor = new ToolExecutor();
+  // 直接测试 CodeBuddy API，不走工具层
+  const apiKey = process.env.CODEBUDDY_API_KEY || "";
+  const baseUrl = "https://copilot.tencent.com/chat/completions";
+
   try {
-    const result = await executor.analyzeJD("React 工程师，需要 TypeScript 和 Node.js");
-    return NextResponse.json({ success: true, result });
+    const response = await fetch(baseUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "auto",
+        messages: [{ role: "user", content: "hi" }],
+        max_tokens: 10,
+      }),
+    });
+
+    const text = await response.text();
+    return NextResponse.json({
+      apiStatus: response.status,
+      apiStatusText: response.statusText,
+      apiHeaders: Object.fromEntries(response.headers.entries()),
+      apiBody: text.slice(0, 500),
+    });
   } catch (error: any) {
     return NextResponse.json({
       success: false,
       error: error.message,
-      stack: error.stack,
-      cause: error.cause,
-    }, { status: 200 });
+    });
   }
 }
