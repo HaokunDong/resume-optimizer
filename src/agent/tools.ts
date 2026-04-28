@@ -3,7 +3,7 @@
 // ============================================================
 
 import { KeywordsAnalysis, ResumeResult } from "./types";
-import { getCodeBuddyHTTP } from "./codebuddy-http";
+import { getLLMAdapter } from "./codebuddy-http";
 
 // L2 - 工具定义
 export interface ToolDefinition {
@@ -52,7 +52,7 @@ export class ToolExecutor {
   private tokenUsage: number = 0;
 
   constructor() {
-    this.codebuddy = getCodeBuddyHTTP();
+    this.codebuddy = getLLMAdapter();
   }
 
   // 分析 JD 关键词

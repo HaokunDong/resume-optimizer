@@ -16,9 +16,9 @@ function getAgent(): ResumeAgentOrchestrator {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!process.env.CODEBUDDY_API_KEY) {
+    if (!process.env.DEEPSEEK_API_KEY) {
       return NextResponse.json(
-        { error: "CodeBuddy API Key 未配置" },
+        { error: "DeepSeek API Key 未配置" },
         { status: 500 }
       );
     }

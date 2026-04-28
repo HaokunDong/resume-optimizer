@@ -1,12 +1,11 @@
 /**
  * Resume Optimizer Agent - 本地测试脚本
- * 
- * 使用 CodeBuddy API
- * 
+ *
+ * 使用 DeepSeek API（OpenAI 兼容格式）
+ *
  * 运行方式:
  * cd resume-optimizer
- * export CODEBUDDY_API_KEY="your-key"
- * export CODEBUDDY_INTERNET_ENVIRONMENT=internal
+ * export DEEPSEEK_API_KEY="your-key"
  * npx tsx scripts/test-agent.ts
  */
 
@@ -74,16 +73,15 @@ async function main() {
   console.log("🚀 启动 Resume Optimizer Agent 测试\n");
 
   // 检查 API Key
-  if (!process.env.CODEBUDDY_API_KEY) {
-    console.error("❌ 错误：请设置 CODEBUDDY_API_KEY 环境变量");
+  if (!process.env.DEEPSEEK_API_KEY) {
+    console.error("❌ 错误：请设置 DEEPSEEK_API_KEY 环境变量");
     console.log("\n方式 1: 命令行设置");
-    console.log('  export CODEBUDDY_API_KEY="ck_xxx"');
-    console.log('  export CODEBUDDY_INTERNET_ENVIRONMENT=internal');
+    console.log('  export DEEPSEEK_API_KEY="your-key"');
     console.log("  npx tsx scripts/test-agent.ts");
     console.log("\n方式 2: 创建 .env.local 文件");
-    console.log('  echo "CODEBUDDY_API_KEY=ck_xxx" > .env.local');
-    console.log('  echo "CODEBUDDY_INTERNET_ENVIRONMENT=internal" >> .env.local');
+    console.log('  echo "DEEPSEEK_API_KEY=your-key" > .env.local');
     console.log("  npx tsx scripts/test-agent.ts\n");
+    console.log("API Key 获取地址: https://platform.deepseek.com/api_keys");
     process.exit(1);
   }
 

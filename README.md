@@ -13,7 +13,7 @@
 ## 🏗️ 技术栈
 
 - **前端框架**：Next.js 14 (App Router)
-- **AI 引擎**：CodeBuddy CLI
+- **AI 引擎**：DeepSeek API（OpenAI 兼容格式）
 - **部署平台**：Vercel
 - **CI/CD**：GitHub Actions / Harness
 
@@ -41,8 +41,7 @@ npm run dev
 
 ```bash
 # .env.local
-CODEBUDDY_API_KEY=your-api-key
-CODEBUDDY_INTERNET_ENVIRONMENT=internal
+DEEPSEEK_API_KEY=your-api-key
 ```
 
 ## 🔄 CI/CD 配置
@@ -53,6 +52,7 @@ CODEBUDDY_INTERNET_ENVIRONMENT=internal
    - `VERCEL_TOKEN`：Vercel 访问令牌
    - `VERCEL_ORG_ID`：Vercel 组织 ID
    - `VERCEL_PROJECT_ID`：Vercel 项目 ID
+   - `DEEPSEEK_API_KEY`：DeepSeek API Key（获取地址：https://platform.deepseek.com/api_keys）
 
 2. **自动触发**：
    - CI：推送 PR 或 main 分支时自动运行测试和构建
@@ -91,7 +91,8 @@ resume-optimizer/
 │   │   ├── tools.ts    # 工具系统
 │   │   ├── orchestrator.ts  # 编排器
 │   │   ├── observability.ts # 可观测性
-│   │   └── codebuddy.ts    # CodeBuddy 适配器
+│   │   ├── codebuddy-http.ts  # LLM 适配器（DeepSeek）
+│   │   └── codebuddy.ts       # CodeBuddy CLI 适配器（备用）
 │   ├── app/
 │   │   ├── page.tsx    # 首页
 │   │   └── api/        # API 路由

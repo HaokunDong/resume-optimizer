@@ -1,5 +1,5 @@
 // ============================================================
-// CodeBuddy HTTP API 适配器 - 用于 Vercel 等服务端环境
+// L2 - LLM 适配器层（当前使用 DeepSeek API）
 // ============================================================
 
 export interface ChatMessage {
@@ -28,35 +28,33 @@ export interface ChatCompletionResponse {
   };
 }
 
-export class CodeBuddyHTTPAdapter {
+export class LLMAdapter {
   private apiKey: string;
   private baseUrl: string;
 
-  constructor() {
-    this.apiKey = process.env.CODEBUDDY_API_KEY || "";
-    // 中国版 API
-    this.baseUrl = "https://copilot.tencent.com/chat/completions";
+  constructor(options?: { apiKey?: string; baseUrl?: string }) {
+    this.apiKey = options?.apiKey || process.env.DEEPSEEK_API_KEY || "";
+    this.baseUrl = options?.baseUrl || "https://api.deepseek.com/v1";
   }
 
   async chatCompletionsCreate(options: ChatCompletionOptions): Promise<ChatCompletionResponse> {
     const systemMessage = options.messages.find(m => m.role === "system");
     const otherMessages = options.messages.filter(m => m.role !== "system");
-    
-    // 添加 JSON 输出提示
+
     const jsonHint = options.response_format?.type === "json_object"
       ? "\n\n请严格返回 JSON 格式，不要包含其他内容。"
       : "";
 
-    console.log("[CodeBuddy HTTP] 发送请求...");
+    console.log("[LLM] 发送请求到 DeepSeek...");
 
-    const response = await fetch(this.baseUrl, {
+    const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        model: "auto",
+        model: "deepseek-chat",
         messages: [
           ...(systemMessage ? [systemMessage] : []),
           ...otherMessages.map(m => ({
@@ -71,16 +69,15 @@ export class CodeBuddyHTTPAdapter {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("[CodeBuddy HTTP] API 错误:", response.status, errorText);
-      throw new Error(`CodeBuddy API 错误: ${response.status} - ${errorText}`);
+      console.error("[LLM] API 错误:", response.status, errorText);
+      throw new Error(`LLM API 错误: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
-    
-    // 适配返回格式
+
     return {
-      id: data.id || `cb-${Date.now()}`,
-      model: data.model || "codebuddy",
+      id: data.id || `ds-${Date.now()}`,
+      model: data.model || "deepseek-chat",
       choices: [
         {
           message: {
@@ -100,11 +97,11 @@ export class CodeBuddyHTTPAdapter {
 }
 
 // 工厂函数
-let cachedAdapter: CodeBuddyHTTPAdapter | null = null;
+let cachedAdapter: LLMAdapter | null = null;
 
-export function getCodeBuddyHTTP(): CodeBuddyHTTPAdapter {
+export function getLLMAdapter(): LLMAdapter {
   if (!cachedAdapter) {
-    cachedAdapter = new CodeBuddyHTTPAdapter();
+    cachedAdapter = new LLMAdapter();
   }
   return cachedAdapter;
 }

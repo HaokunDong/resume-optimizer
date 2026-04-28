@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ToolExecutor } from "../tools";
-import { getCodeBuddyHTTP } from "../codebuddy-http";
+import { getLLMAdapter } from "../codebuddy-http";
 
-// 顶部 mock — vi.mock 会被 hoisted，在所有 import 之前执行
+// 顶部 mock
 vi.mock("../codebuddy-http", () => ({
-  getCodeBuddyHTTP: vi.fn(),
+  getLLMAdapter: vi.fn(),
 }));
 
 describe("L2 - Tool System", () => {
@@ -12,8 +12,7 @@ describe("L2 - Tool System", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    // 每个测试前让 factory 返回一个新的 mock 实例
-    (getCodeBuddyHTTP as any).mockReturnValue({
+    (getLLMAdapter as any).mockReturnValue({
       chatCompletionsCreate: vi.fn(),
     });
     executor = new ToolExecutor();
@@ -21,7 +20,7 @@ describe("L2 - Tool System", () => {
 
   describe("analyzeJD", () => {
     it("应该解析 JD 返回关键词匹配结果", async () => {
-      const mock = getCodeBuddyHTTP() as any;
+      const mock = getLLMAdapter() as any;
 
       mock.chatCompletionsCreate.mockResolvedValue({
         choices: [
@@ -48,7 +47,7 @@ describe("L2 - Tool System", () => {
     });
 
     it("遇到 API 错误应该抛出异常", async () => {
-      const mock = getCodeBuddyHTTP() as any;
+      const mock = getLLMAdapter() as any;
       mock.chatCompletionsCreate.mockRejectedValue(new Error("API Error"));
 
       await expect(executor.analyzeJD("测试 JD")).rejects.toThrow(
@@ -59,7 +58,7 @@ describe("L2 - Tool System", () => {
 
   describe("optimizeResume", () => {
     it("应该返回优化后的简历和建议", async () => {
-      const mock = getCodeBuddyHTTP() as any;
+      const mock = getLLMAdapter() as any;
 
       mock.chatCompletionsCreate.mockResolvedValue({
         choices: [
@@ -86,7 +85,7 @@ describe("L2 - Tool System", () => {
     });
 
     it("应该处理 markdown 代码块包裹的 JSON", async () => {
-      const mock = getCodeBuddyHTTP() as any;
+      const mock = getLLMAdapter() as any;
 
       mock.chatCompletionsCreate.mockResolvedValue({
         choices: [
@@ -106,7 +105,7 @@ describe("L2 - Tool System", () => {
     });
 
     it("应该正确追踪 token 使用量", async () => {
-      const mock = getCodeBuddyHTTP() as any;
+      const mock = getLLMAdapter() as any;
 
       mock.chatCompletionsCreate.mockResolvedValue({
         choices: [
